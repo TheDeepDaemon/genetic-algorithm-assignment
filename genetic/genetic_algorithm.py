@@ -84,33 +84,6 @@ def ga_step(population, evaluation_func, mutation_freq, n_to_select, selection_t
     return new_population
 
 
-def ga_step_truncation2(population, evaluation_func, mutation_freq, num_new_members):
-    '''
-        Run the genetic algorithm for one step.
-        This is truncation selection 2 (my own formulation),
-        where new members are added and the best are kept.
-    '''
-
-    # get sizes
-    population_size = population.shape[0]
-    num_genes = population.shape[1]
-
-    # init with existing population
-    new_population = [member for member in population]
-
-    # add new members
-    for _ in range(num_new_members):
-        parents = population[np.random.choice(population.shape[0], 2, replace=False), :]
-        new_member = combine(parents[0], parents[1], num_genes)
-        new_population.append(mutate_genes(new_member, mutation_freq))
-    
-    # make it a matrix again
-    new_population = np.array(new_population)
-    
-    # keep the best members
-    return sort_genes(new_population, evaluation_func)[-population_size:]
-
-
 def get_best_population_evaluation(population, evaluation_func):
     '''
         Get the best evaluation value in the population.
