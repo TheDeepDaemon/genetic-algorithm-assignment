@@ -24,13 +24,11 @@ def get_initial_population(config):
     pop_size, num_genes, stop, W = map(int, [lines[i].strip() for i in range(4)])
     S = [tuple(map(int, line.strip().split())) for line in lines [4:]]
 
-    # Initialize population at generation 0
-    g = 0
-    P = np.random.randint(2, size=(pop_size, num_genes))
-    
-    return P, W, S, g, stop, num_genes
+    return pop_size, W, S, stop, num_genes
 
-initial_population, MAX_WEIGHT, ITEMS, _, NUM_STEPS, NUM_GENES = get_initial_population("config_1.txt")
+CONFIG_FNAME = "config_1.txt"
+
+POP_SIZE, MAX_WEIGHT, ITEMS, NUM_STEPS, NUM_GENES = get_initial_population(CONFIG_FNAME)
 
 def get_item(index):
     return ITEMS[index]

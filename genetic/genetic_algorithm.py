@@ -4,7 +4,7 @@ from genetic.sort_genes import sort_genes
 from genetic.mutate import mutate_genes
 from genetic.roulette_util import select_n_from_population
 from genetic.tournament_util import tournament_selection
-
+import matplotlib.pyplot as plt
 
 def init_population(population_size, num_genes):
     '''
@@ -52,7 +52,23 @@ def regenerate_pop_from_subset(subset, population_size, num_genes, mutation_freq
     return new_population
 
 
-def ga_step(population, evaluation_func, mutation_freq, n_to_select, selection_type):
+def copy_parents(parents, population_size):
+    '''
+        Regenerate the population to it's original size
+        by copying the parents.
+        This is used to answer Q2, because selection
+        is to be used without crossover or mutation.
+    '''
+    new_population = [p for p in parents]
+
+    for _ in range(population_size - len(parents)):
+        child =  parents[np.random.choice(len(parents), 1, replace=False), :]
+        new_population.append(child[0])
+
+    return np.array(new_population)
+
+
+def ga_step(population, evaluation_func, mutation_freq, n_to_select, selection_type, selection_only=False):
     '''
         Run the genetic algorithm for one step.
         The subset is used as parents to fill in the rest of the population.
@@ -79,7 +95,12 @@ def ga_step(population, evaluation_func, mutation_freq, n_to_select, selection_t
 
     # use the selected members as parents to regenerate the population
     # back to it's previous size
-    new_population = regenerate_pop_from_subset(selected_members, population_size, num_genes, mutation_freq)
+    if selection_only:
+        # just copy the parents
+        new_population = copy_parents(selected_members, population_size=population_size)
+    else:
+        # use crossover and mutation
+        new_population = regenerate_pop_from_subset(selected_members, population_size, num_genes, mutation_freq)
 
     return new_population
 
@@ -105,14 +126,31 @@ def get_best_population_evaluation(population, evaluation_func):
     return best_value
 
 
+def get_average_evaluation(population, evaluation_func):
+    '''
+        Get the average evaluation value in the population.
+    '''
+
+    total = 0
+
+    # iterate through every member in the population
+    for member in population:
+
+        # evaluate the member
+        val = evaluation_func(member)
+        total += val
+    return total / len(population)
+
+
 def run_genetic_algorithm(
         initial_population,
-        num_steps,
+        num_generations,
         evaluation_func,
         mutation_freq,
         n_to_select,
         selection_type,
-        goal_eval_value=None):
+        goal_eval_value=None,
+        selection_only=False):
     '''
         Run the genetic algorithm for a pre-determined number of steps.
         Stop if you have reached the goal evaluation value.
@@ -121,7 +159,7 @@ def run_genetic_algorithm(
     # initialize the population
     population = initial_population
 
-    for _ in range(num_steps):
+    for _ in range(num_generations):
 
         # update the population for this step
         population = ga_step(
@@ -129,7 +167,8 @@ def run_genetic_algorithm(
             evaluation_func=evaluation_func,
             mutation_freq=mutation_freq,
             n_to_select=n_to_select,
-            selection_type=selection_type)
+            selection_type=selection_type,
+            selection_only=selection_only)
         
         # extra stop condition
         if goal_eval_value is not None:
@@ -140,3 +179,50 @@ def run_genetic_algorithm(
             if best_value >= goal_eval_value:
                 break
     return population
+
+
+def graph_genetic_algorithm(
+        initial_population,
+        num_generations,
+        evaluation_func,
+        mutation_freq,
+        n_to_select,
+        selection_type,
+        selection_only):
+    '''
+        Run the genetic algorithm.
+        This version of the function is designed 
+        to be run in order to graph results for each generation.
+    '''
+    
+    # initialize the population
+    population = initial_population
+
+    best_fitness_log = []
+    avg_fitness_log = []
+
+    for _ in range(num_generations):
+
+        # update the population for this step
+        population = ga_step(
+            population=population,
+            evaluation_func=evaluation_func,
+            mutation_freq=mutation_freq,
+            n_to_select=n_to_select,
+            selection_type=selection_type,
+            selection_only=selection_only)
+        
+        best_fitness = get_best_population_evaluation(
+            population=population,
+            evaluation_func=evaluation_func)
+        best_fitness_log.append(best_fitness)
+        
+        avg_fitness = get_average_evaluation(
+            population=population, 
+            evaluation_func=evaluation_func)
+        avg_fitness_log.append(avg_fitness)
+    
+    plt.plot(best_fitness_log)
+    plt.plot(avg_fitness_log)
+
+    plt.savefig('fitness plot.png', bbox_inches='tight')
